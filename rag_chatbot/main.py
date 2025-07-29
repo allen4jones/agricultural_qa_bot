@@ -1,13 +1,12 @@
-import sys
-import os
-sys.path.append(os.path.dirname(__file__))
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from src.best_chunk import get_top_chunks
-from chat import build_prompt, READER_LLM
+from chat import build_prompt, query_llm
+
 app = FastAPI()
 
+# Allow frontend access (Streamlit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,9 +24,13 @@ def root():
 
 @app.post("/chat")
 def chat(req: ChatRequest):
+    # Retrieve top relevant chunks for the country
     chunks = get_top_chunks(req.question, req.country, db_path="processed/chroma_db")
     context = "\n\n".join([c["text"] for c in chunks])
+
+    # Build prompt and call HF API
     prompt = build_prompt(context, req.question, chat_history=[])
-    result = READER_LLM(prompt)[0]["generated_text"]
+    result = query_llm(prompt)
+    
     return {"answer": result.strip()}
 
