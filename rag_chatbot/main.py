@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from src.best_chunk import get_top_chunks
-
+from chat import build_prompt, READER_LLM
 app = FastAPI()
 
 app.add_middleware(
