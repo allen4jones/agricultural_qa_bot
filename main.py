@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from agricultural_qa_bot.inference import get_answer
 
 app = FastAPI()
 
