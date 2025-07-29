@@ -1,5 +1,25 @@
+# FastAPI server
 fastapi
-uvicorn
+uvicorn[standard]
+
+# Transformers + model handling
 transformers
-torch
-accelerate
+sentence-transformers
+accelerate           # for efficient model loading
+torch                # required to run Phi-4 (uses PyTorch backend)
+
+# Token counting
+tiktoken
+
+# Vector DB
+chromadb
+
+# Language detection (optional, used in your pipeline)
+langdetect
+
+# PDF and metadata processing
+PyMuPDF               # fitz: used for PDF parsing
+pandas                # used for .csv metadata or other I/O
+
+# (Optional, only if you use structured config)
+python-dotenv
