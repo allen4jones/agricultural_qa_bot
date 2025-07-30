@@ -25,7 +25,12 @@ def root():
 @app.post("/chat")
 def chat(req: ChatRequest):
     # Retrieve top relevant chunks for the country
-    chunks = get_top_chunks(req.question, req.country, db_path="processed/chroma_db")
+    chunks = get_top_chunks(
+    country=req.country,
+    query=req.question,
+    chroma_path="processed/chroma_db",  # or dynamic path
+    top_k=5
+)
     context = "\n\n".join([c["text"] for c in chunks])
 
     # Build prompt and call HF API
