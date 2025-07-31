@@ -2,14 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+import logging
 
-# 🔁 Using mock functions for testing
 from chat import build_prompt, query_llm
 from src.best_chunk import get_top_chunks
 
+# Setup FastAPI
 app = FastAPI()
 
-# ✅ CORS for frontend
+# Enable CORS for Streamlit frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,22 +18,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Request schema
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Request schema
 class ChatRequest(BaseModel):
     question: str
     country: str = "albania"
 
-# ✅ Health check for Render
+# Health check for Render
 @app.get("/", include_in_schema=False)
 @app.head("/", include_in_schema=False)
 def health_check():
     return JSONResponse(content={"status": "ok"})
 
-# ✅ /chat with debug-safe model call
+# POST endpoint for chatbot
 @app.post("/chat")
 def chat(req: ChatRequest):
     try:
-        # Retrieve chunks (you can also mock this if needed)
         chunks = get_top_chunks(
             country=req.country,
             query=req.question,
@@ -41,11 +45,11 @@ def chat(req: ChatRequest):
         )
         context = "\n\n".join([c["text"] for c in chunks])
 
-        # Mock prompt + response
         prompt = build_prompt(context, req.question, chat_history=[])
         result = query_llm(prompt)
 
         return {"answer": result.strip()}
 
     except Exception as e:
-        return {"answer": f"🔥 Error in backend: {str(e)}"}
+        logger.exception("🔥 Exception in /chat route")
+        return {"answer": f"🔥 Backend error: {str(e)}"}
