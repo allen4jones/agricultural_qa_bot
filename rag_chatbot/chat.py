@@ -1,11 +1,15 @@
 import os
 import requests
+import logging
 from dotenv import load_dotenv
 
-# ✅ Load environment variables from .env if running locally
+# Load .env file (for local dev)
 load_dotenv()
 
-# ✅ Read Hugging Face token and model name
+# Setup logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_MODEL = "microsoft/Phi-4-mini-instruct"
 
@@ -22,10 +26,11 @@ def build_prompt(context: str, question: str, chat_history: list) -> str:
 
 def query_llm(prompt: str) -> str:
     """
-    Queries Hugging Face Inference API for response generation.
+    Queries Hugging Face Inference API, with fallback to mock.
     """
     if not HF_TOKEN:
-        return "❌ HF_TOKEN is not set in the environment."
+        logger.warning("⚠️ HF_TOKEN is not set. Using mock response.")
+        return f"(Mock Response) {prompt[:100]}..."
 
     headers = {
         "Authorization": f"Bearer {HF_TOKEN}"
@@ -47,20 +52,25 @@ def query_llm(prompt: str) -> str:
             json=payload,
             timeout=30
         )
+        logger.info(f"HF API response code: {response.status_code}")
+        logger.debug(f"HF API raw response: {response.text[:500]}")
+
         response.raise_for_status()
         result = response.json()
 
-        # HF might return a list or a dict
         if isinstance(result, list) and "generated_text" in result[0]:
             return result[0]["generated_text"]
         elif isinstance(result, dict) and "error" in result:
             return f"❌ Hugging Face API Error: {result['error']}"
         else:
-            return str(result)
+            return f"⚠️ Unexpected response format: {str(result)}"
 
     except requests.exceptions.Timeout:
-        return "❌ Request timed out. Try again later."
-    except requests.exceptions.RequestException as e:
-        return f"❌ HF API request failed: {str(e)}"
+        logger.error("❌ Request to HF API timed out.")
+        return "❌ Request to model timed out."
+    except Exception as e:
+        logger.exception("❌ HF API call failed.")
+        return f"(Mock) Error fallback response: {str(e)}"
+
 
 
